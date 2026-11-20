@@ -1,0 +1,54 @@
+# Example cluster settings; central Argo CD runs on a management cluster.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: aegisgate-identity
+resources:
+- ../../base
+- pod-disruption-budget.yaml
+patches:
+- target:
+    version: v1
+    kind: Namespace
+    name: aegisgate-identity
+  patch: |
+    - op: add
+      path: /metadata/labels/ambient-single-mesh
+      value: example-mesh
+    - op: remove
+      path: /metadata/labels/argocd.argoproj.io~1managed-by
+- target:
+    group: security.istio.io
+    kind: AuthorizationPolicy
+    name: keycloak-from-waypoint
+  patch: |
+    - op: replace
+      path: /spec/rules/0/from/0/source/principals/0
+      value: mesh.example.com/ns/aegisgate-identity/sa/keycloak-waypoint
+- target:
+    group: security.istio.io
+    kind: AuthorizationPolicy
+    name: keycloak-gateway-at-waypoint
+  patch: |
+    - op: replace
+      path: /spec/rules/0/from/0/source/principals/0
+      value: mesh.example.com/ns/aegisgate/sa/aegisgate-gateway-istio
+- target:
+    group: k8s.keycloak.org
+    kind: Keycloak
+    name: keycloak
+  patch: |-
+    - op: add
+      path: /spec/env
+      value:
+        - name: JAVA_OPTS_APPEND
+          value: -Djava.net.preferIPv4Stack=false -Djava.net.preferIPv6Addresses=true
+    - op: add
+      path: /spec/additionalOptions/-
+      value:
+        name: http-host
+        value: '::'
+    - op: add
+      path: /spec/additionalOptions/-
+      value:
+        name: http-management-host
+        value: '::'

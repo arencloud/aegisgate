@@ -1,0 +1,56 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: aegisgate
+  namespace: argocd
+spec:
+  description: AegisGate application and identity services on Example
+  sourceRepos:
+    - https://github.com/arencloud/aegisgate.git
+  destinations:
+    - server: https://api.cluster.example.com:6443
+      namespace: aegisgate
+    - server: https://api.cluster.example.com:6443
+      namespace: aegisgate-identity
+    - server: https://api.cluster.example.com:6443
+      namespace: aegisgate-cache
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: ''
+      kind: ServiceAccount
+    - group: ''
+      kind: Service
+    - group: ''
+      kind: ConfigMap
+    - group: apps
+      kind: Deployment
+    - group: policy
+      kind: PodDisruptionBudget
+    - group: networking.k8s.io
+      kind: NetworkPolicy
+    - group: networking.istio.io
+      kind: DestinationRule
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+    - group: kuadrant.io
+      kind: AuthPolicy
+    - group: kuadrant.io
+      kind: TLSPolicy
+    - group: security.istio.io
+      kind: AuthorizationPolicy
+    - group: security.istio.io
+      kind: PeerAuthentication
+    - group: extensions.istio.io
+      kind: WasmPlugin
+    - group: external-secrets.io
+      kind: ExternalSecret
+    - group: k8s.keycloak.org
+      kind: Keycloak
+    - group: k8s.keycloak.org
+      kind: KeycloakRealmImport
+    - group: redkey.inditex.dev
+      kind: Redkey

@@ -1,0 +1,33 @@
+# AegisGate WAF configuration; prepared locally, not applied to a cluster.
+# Blocking mode and 64 KiB body limits match this application.
+# For private Quay access, create the pull Secret in this same namespace.
+apiVersion: extensions.istio.io/v1alpha1
+kind: WasmPlugin
+metadata:
+  name: coraza-waf
+  namespace: aegisgate
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: aegisgate-gateway
+  url: oci://quay.io/arencloud/coraza@sha256:40e483c634d8714a94c15c21c0979564215120ce9d307587031a8c70adf17d36
+  imagePullPolicy: IfNotPresent
+  # imagePullSecret: quay-pull-secret
+  phase: AUTHN
+  priority: 100
+  failStrategy: FAIL_CLOSE
+  pluginConfig:
+    default_directives: default
+    directives_map:
+      default:
+        - Include @recommended-conf
+        - SecRuleEngine On
+        - SecDebugLogLevel 1
+        - SecRequestBodyAccess On
+        - SecRequestBodyLimit 65536
+        - SecRequestBodyInMemoryLimit 65536
+        - SecRequestBodyLimitAction Reject
+        - SecResponseBodyAccess Off
+        - Include @crs-setup-conf
+        - Include @owasp_crs/*.conf

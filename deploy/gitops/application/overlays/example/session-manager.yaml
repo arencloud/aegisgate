@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: session-manager
+spec:
+  template:
+    spec:
+      containers:
+        - name: session-manager
+          env:
+            - name: LISTEN_ADDRESS
+              value: '[::]:8081'
+            - name: SESSION_CHECK_ADDRESS
+              value: '[::]:8082'
+            - name: OIDC_CA_BUNDLE
+              value: /etc/aegisgate/trust/ca-bundle.crt
+          volumeMounts:
+            - name: trusted-ca
+              mountPath: /etc/aegisgate/trust
+              readOnly: true
+      volumes:
+        - name: trusted-ca
+          configMap:
+            name: aegisgate-trusted-ca
+            items:
+              - key: ca-bundle.crt
+                path: ca-bundle.crt

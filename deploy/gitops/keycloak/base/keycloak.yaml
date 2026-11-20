@@ -1,0 +1,49 @@
+apiVersion: k8s.keycloak.org/v2beta1
+kind: Keycloak
+metadata:
+  name: keycloak
+spec:
+  instances: 1
+  db:
+    vendor: postgres
+    usernameSecret:
+      name: keycloak-db
+      key: username
+    passwordSecret:
+      name: keycloak-db
+      key: password
+  bootstrapAdmin:
+    user:
+      secret: keycloak-bootstrap
+  truststores:
+    postgresql:
+      secret:
+        name: keycloak-db-ca
+  additionalOptions:
+  - name: db-url
+    secret:
+      name: keycloak-db
+      key: jdbc-url
+  - name: http-management-scheme
+    value: http
+  http:
+    httpEnabled: true
+    labels:
+      istio.io/use-waypoint: keycloak-waypoint
+      istio.io/ingress-use-waypoint: 'true'
+  hostname:
+    hostname: https://auth.aegisgate.example.com
+    strict: true
+  proxy:
+    headers: xforwarded
+  ingress:
+    enabled: false
+  networkPolicy:
+    enabled: false
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1700Mi
+    limits:
+      cpu: '2'
+      memory: 2Gi

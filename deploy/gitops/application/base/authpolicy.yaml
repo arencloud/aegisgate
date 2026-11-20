@@ -1,0 +1,34 @@
+apiVersion: kuadrant.io/v1
+kind: AuthPolicy
+metadata:
+  name: application-sessions
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: application-api
+  rules:
+    # Establish pipeline context; authorization below still requires a valid session.
+    authentication:
+      session-context:
+        anonymous: {}
+    metadata:
+      session:
+        http:
+          url: http://session-check.aegisgate.svc.cluster.local:8082/internal/check
+          method: GET
+          timeout: 2000
+          headers:
+            Cookie:
+              selector: context.request.http.headers.cookie
+            X-Original-Method:
+              selector: context.request.http.method
+            X-Original-Path:
+              selector: context.request.http.path
+    authorization:
+      session-rbac:
+        patternMatching:
+          patterns:
+            - selector: auth.metadata.session.allowed
+              operator: eq
+              value: 'true'

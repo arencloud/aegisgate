@@ -1,0 +1,56 @@
+# Example cluster settings; central Argo CD runs on a management cluster.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: aegisgate
+resources:
+- ../../base
+- trusted-ca.yaml
+patches:
+- target:
+    group: security.istio.io
+    kind: AuthorizationPolicy
+    name: webui-transport
+  patch: |
+    - op: replace
+      path: /spec/rules/0/from/0/source/principals/0
+      value: mesh.example.com/ns/aegisgate/sa/aegisgate-gateway-istio
+- target:
+    group: security.istio.io
+    kind: AuthorizationPolicy
+    name: session-manager-transport
+  patch: |
+    - op: replace
+      path: /spec/rules/0/from/0/source/principals/0
+      value: mesh.example.com/ns/aegisgate/sa/session-manager-waypoint
+    - op: replace
+      path: /spec/rules/1/from/0/source/principals/0
+      value: mesh.example.com/ns/kuadrant-system/sa/authorino-authorino
+- target:
+    group: security.istio.io
+    kind: AuthorizationPolicy
+    name: backend-transport
+  patch: |
+    - op: replace
+      path: /spec/rules/0/from/0/source/principals/0
+      value: mesh.example.com/ns/aegisgate/sa/backend-waypoint
+- target:
+    group: security.istio.io
+    kind: AuthorizationPolicy
+    name: session-manager-access
+  patch: |
+    - op: replace
+      path: /spec/rules/0/from/0/source/principals/0
+      value: mesh.example.com/ns/aegisgate/sa/aegisgate-gateway-istio
+- target:
+    group: security.istio.io
+    kind: AuthorizationPolicy
+    name: backend-access
+  patch: |
+    - op: replace
+      path: /spec/rules/0/from/0/source/principals/0
+      value: mesh.example.com/ns/aegisgate/sa/session-manager
+    - op: replace
+      path: /spec/rules/1/from/0/source/principals/0
+      value: mesh.example.com/ns/aegisgate/sa/session-manager
+- path: session-manager.yaml
+- path: backend.yaml

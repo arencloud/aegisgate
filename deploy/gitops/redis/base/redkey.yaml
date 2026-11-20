@@ -1,0 +1,68 @@
+apiVersion: redkey.inditex.dev/v1beta1
+kind: Redkey
+metadata:
+  name: aegisgate-redis
+spec:
+  # Matches the existing non-cluster Rust Redis client and global session SCAN.
+  mode: standalone
+  primaries: 1
+  replicasPerPrimary: 0
+  ephemeral: true
+  purgeKeysOnRebalance: false
+  image: docker.io/library/redis:8.10@sha256:1f88291b4c57bdf249f02eb085a8669889b2d2954e91d4de5118a5da6b78dd53
+  auth:
+    secret: redis-auth
+  labels:
+    app.kubernetes.io/part-of: aegisgate
+  config: |
+    maxmemory 128mb
+    maxmemory-policy noeviction
+    protected-mode yes
+    appendonly no
+    save ""
+  resources:
+    requests:
+      cpu: 100m
+      memory: 192Mi
+    limits:
+      cpu: "1"
+      memory: 256Mi
+  override:
+    statefulSet:
+      spec:
+        template:
+          spec:
+            securityContext:
+              runAsNonRoot: true
+              seccompProfile:
+                type: RuntimeDefault
+            containers:
+              - name: redis
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop: [ALL]
+  robin:
+    image: ghcr.io/inditextech/redkey-robin:0.2.0@sha256:d174bab6d680e834dbc04e3c48a7ac8a7adab3b6aef4e8e88e8b387ec175f4e2
+    resources:
+      requests:
+        cpu: 100m
+        memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+    template:
+      spec:
+        securityContext:
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+        containers:
+          - name: robin
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop: [ALL]
+    config:
+      profiling:
+        enabled: false

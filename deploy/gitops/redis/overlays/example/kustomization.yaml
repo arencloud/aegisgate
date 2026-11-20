@@ -1,0 +1,44 @@
+# Example cluster settings; central Argo CD runs on a management cluster.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: aegisgate-cache
+resources:
+- ../../base
+patches:
+- target:
+    group: redkey.inditex.dev
+    kind: Redkey
+    name: aegisgate-redis
+  patch: |-
+    - op: replace
+      path: /spec/robin/image
+      value: quay.io/arencloud/aegisgate-redkey-robin:0.2.0-ipv6.1@sha256:34170aebc2e38e6dfa40ae815c933dfa7ce67f861a1ce1c9e93d47b6619261da
+- target:
+    version: v1
+    kind: Namespace
+    name: aegisgate-cache
+  patch: |
+    - op: add
+      path: /metadata/labels/ambient-single-mesh
+      value: example-mesh
+    - op: remove
+      path: /metadata/labels/argocd.argoproj.io~1managed-by
+- target:
+    group: security.istio.io
+    kind: AuthorizationPolicy
+    name: redis-from-waypoint-and-robin
+  patch: |
+    - op: replace
+      path: /spec/rules/0/from/0/source/principals/0
+      value: mesh.example.com/ns/aegisgate-cache/sa/redis-waypoint
+    - op: replace
+      path: /spec/rules/0/from/0/source/principals/1
+      value: mesh.example.com/ns/aegisgate-cache/sa/aegisgate-redis-robin
+- target:
+    group: security.istio.io
+    kind: AuthorizationPolicy
+    name: redis-session-manager-at-waypoint
+  patch: |
+    - op: replace
+      path: /spec/rules/0/from/0/source/principals/0
+      value: mesh.example.com/ns/aegisgate/sa/session-manager

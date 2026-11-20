@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: aegisgate-gateway
+  namespace: argocd
+spec:
+  project: aegisgate
+  source:
+    repoURL: https://github.com/arencloud/aegisgate.git
+    targetRevision: main
+    path: deploy/gitops/gateway/overlays/example
+  destination:
+    server: https://api.cluster.example.com:6443
+    namespace: aegisgate
+  syncPolicy:
+    syncOptions:
+      - PruneLast=true

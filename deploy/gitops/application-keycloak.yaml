@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: aegisgate-keycloak
+  namespace: argocd
+spec:
+  project: aegisgate
+  source:
+    repoURL: https://github.com/arencloud/aegisgate.git
+    targetRevision: main
+    path: deploy/gitops/keycloak/overlays/example
+  destination:
+    server: https://api.cluster.example.com:6443
+    namespace: aegisgate-identity
+  # Import the Application, review its diff, then sync explicitly.
+  syncPolicy:
+    syncOptions:
+      - PruneLast=true

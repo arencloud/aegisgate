@@ -1,0 +1,77 @@
+[
+  {
+    "id": "allowed",
+    "label": "Open application",
+    "steps": [
+      "Step 1: You open an application",
+      "Step 2: Enter through HTTPS",
+      "Step 3: Inspect the request",
+      "Step 4: Ask for an access decision",
+      "Step 5: Find a valid session",
+      "Step 6: Allow this exact action",
+      "Step 7: Verify the service identity",
+      "Step 8: Application access granted"
+    ],
+    "gifBytes": 528516
+  },
+  {
+    "id": "signin",
+    "label": "First sign-in",
+    "steps": [
+      "Step 1: You choose “Sign in”",
+      "Step 2: Find the sign-in route",
+      "Step 3: Inspect the sign-in request",
+      "Step 4: Prepare a protected login",
+      "Step 5: Prove your identity",
+      "Step 6: Validate the identity result",
+      "Step 7: Save the application session",
+      "Step 8: You are signed in"
+    ],
+    "gifBytes": 550441
+  },
+  {
+    "id": "attack",
+    "label": "Malicious request",
+    "steps": [
+      "Step 1: A harmful request is sent",
+      "Step 2: Enter through HTTPS",
+      "Step 3: Threat blocked"
+    ],
+    "gifBytes": 197199
+  },
+  {
+    "id": "role",
+    "label": "Insufficient role",
+    "steps": [
+      "Step 1: You try an operator action",
+      "Step 2: Enter through HTTPS",
+      "Step 3: Inspect the request",
+      "Step 4: Check the requested permission",
+      "Step 5: The session is valid",
+      "Step 6: Permission denied"
+    ],
+    "gifBytes": 394150
+  },
+  {
+    "id": "expired",
+    "label": "Expired session",
+    "steps": [
+      "Step 1: You open an application",
+      "Step 2: Enter through HTTPS",
+      "Step 3: Inspect the request",
+      "Step 4: Check the session again",
+      "Step 5: The session is no longer valid",
+      "Step 6: Fresh sign-in required"
+    ],
+    "gifBytes": 395648
+  },
+  {
+    "id": "bypass",
+    "label": "Direct backend access",
+    "steps": [
+      "Step 1: An untrusted workload tries to enter",
+      "Step 2: Service identity denied"
+    ],
+    "gifBytes": 139036
+  }
+]

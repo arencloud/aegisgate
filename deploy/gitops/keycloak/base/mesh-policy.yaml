@@ -1,0 +1,83 @@
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: keycloak-strict
+spec:
+  selector:
+    matchLabels:
+      app: keycloak
+      app.kubernetes.io/instance: keycloak
+  mtls:
+    mode: STRICT
+  portLevelMtls:
+    '9000':
+      mode: DISABLE
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: keycloak-from-waypoint
+spec:
+  selector:
+    matchLabels:
+      app: keycloak
+      app.kubernetes.io/instance: keycloak
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/aegisgate-identity/sa/keycloak-waypoint
+    to:
+    - operation:
+        ports:
+        - '8080'
+  - to:
+    - operation:
+        ports:
+        - '9000'
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: keycloak-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app: keycloak
+      app.kubernetes.io/instance: keycloak
+  policyTypes:
+  - Ingress
+  ingress:
+  - ports:
+    - protocol: TCP
+      port: 15008
+  - ports:
+    - protocol: TCP
+      port: 9000
+    from:
+    - namespaceSelector: {}
+    - ipBlock:
+        cidr: 169.254.7.127/32
+    - ipBlock:
+        cidr: fd16:9254:7127:1337:ffff:ffff:ffff:ffff/128
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: keycloak-gateway-at-waypoint
+spec:
+  targetRefs:
+  - group: ''
+    kind: Service
+    name: keycloak-service
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/aegisgate/sa/aegisgate-gateway-istio
+    to:
+    - operation:
+        ports:
+        - '8080'

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aegisgate-gateway-options
+data:
+  # Example IPv6 LoadBalancer settings; customize for your network.
+  service: |
+    spec:
+      type: LoadBalancer
+      ipFamilyPolicy: SingleStack
+      ipFamilies:
+        - IPv6
+      externalTrafficPolicy: Local
+      ports:
+        - $patch: delete
+          port: 15021

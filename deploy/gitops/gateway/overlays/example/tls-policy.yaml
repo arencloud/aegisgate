@@ -1,0 +1,19 @@
+apiVersion: kuadrant.io/v1
+kind: TLSPolicy
+metadata:
+  name: aegisgate-tls
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: aegisgate-gateway
+  issuerRef:
+    group: cert-manager.io
+    kind: ClusterIssuer
+    name: example-issuer
+  duration: 24h
+  renewBefore: 8h
+  privateKey:
+    algorithm: RSA
+    size: 2048
+    rotationPolicy: Always

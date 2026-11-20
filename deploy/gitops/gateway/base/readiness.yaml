@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: aegisgate-gateway-readiness
+  namespace: aegisgate
+spec:
+  type: ClusterIP
+  selector:
+    gateway.networking.k8s.io/gateway-name: aegisgate-gateway
+  ports:
+    - name: http-readiness
+      port: 15021
+      targetPort: 15021
+      appProtocol: http
+---
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: aegisgate-gateway-readiness
+  namespace: aegisgate
+spec:
+  host: aegisgate-gateway-readiness.aegisgate.svc.cluster.local
+  trafficPolicy:
+    portLevelSettings:
+      - port:
+          number: 15021
+        tls:
+          # Envoy's native status listener is plaintext, internal-only.
+          mode: DISABLE
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: aegisgate-gateway-readiness
+  namespace: aegisgate
+spec:
+  parentRefs:
+    - name: aegisgate-gateway
+      sectionName: https
+    - name: aegisgate-gateway
+      sectionName: keycloak-https
+  hostnames:
+    - demo.aegisgate.example.com
+    - auth.aegisgate.example.com
+  rules:
+    - matches:
+        - path:
+            type: Exact
+            value: /health/ready
+          method: GET
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplaceFullPath
+              replaceFullPath: /healthz/ready
+      backendRefs:
+        - name: aegisgate-gateway-readiness
+          port: 15021

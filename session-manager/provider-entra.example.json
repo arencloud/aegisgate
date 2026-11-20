@@ -1,0 +1,9 @@
+{
+  "id": "entra",
+  "name": "Microsoft Entra ID",
+  "issuer": "https://login.microsoftonline.com/YOUR_TENANT_ID/v2.0",
+  "client_id": "YOUR_APPLICATION_ID",
+  "client_secret_env": "ENTRA_CLIENT_SECRET",
+  "roles_pointer": "/roles",
+  "role_mapping": { "Aegis.Reader": "viewer", "Aegis.Operator": "operator", "Aegis.Admin": "admin" }
+}

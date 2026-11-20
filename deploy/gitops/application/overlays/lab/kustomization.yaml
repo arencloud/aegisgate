@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: aegisgate
+resources:
+  - ../../base
+patches:
+  - target:
+      group: security.istio.io
+      kind: AuthorizationPolicy
+      name: session-manager-transport
+    patch: |-
+      - op: replace
+        path: /spec/rules/1/from/0/source/principals/0
+        value: cluster.local/ns/kuadrant-system/sa/authorino
+        # Assumed RHCL identity: verify the deployed namespace and service account.
+# The Gateway application owns this shared namespace, including the lab
+# ambient-single-mesh: example-mesh discovery label. Do not duplicate its ownership.

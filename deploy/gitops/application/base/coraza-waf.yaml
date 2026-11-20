@@ -1,0 +1,30 @@
+apiVersion: extensions.istio.io/v1alpha1
+kind: WasmPlugin
+metadata:
+  name: coraza-waf
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: aegisgate-gateway
+  # Pin the child manifest: Istio compares its digest, not the parent OCI index.
+  # Both architecture entries contain the identical, portable WASM layer.
+  url: oci://quay.io/arencloud/coraza@sha256:40e483c634d8714a94c15c21c0979564215120ce9d307587031a8c70adf17d36
+  imagePullPolicy: IfNotPresent
+  phase: AUTHN
+  priority: 100
+  failStrategy: FAIL_CLOSE
+  pluginConfig:
+    default_directives: default
+    directives_map:
+      default:
+        - Include @recommended-conf
+        - SecRuleEngine On
+        - SecDebugLogLevel 1
+        - SecRequestBodyAccess On
+        - SecRequestBodyLimit 65536
+        - SecRequestBodyInMemoryLimit 65536
+        - SecRequestBodyLimitAction Reject
+        - SecResponseBodyAccess Off
+        - Include @crs-setup-conf
+        - Include @owasp_crs/*.conf

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aegisgate-trusted-ca
+  labels:
+    config.openshift.io/inject-trusted-cabundle: 'true'
+# OpenShift's cluster-network-operator owns data.ca-bundle.crt.

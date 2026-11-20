@@ -1,0 +1,14 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: keycloak
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: keycloak
+      app.kubernetes.io/instance: keycloak
+    matchExpressions:
+      # Protect server pods, not the separate realm-import Job.
+      - key: statefulset.kubernetes.io/pod-name
+        operator: Exists

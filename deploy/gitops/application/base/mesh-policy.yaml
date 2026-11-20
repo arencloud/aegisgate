@@ -1,0 +1,183 @@
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: webui-strict
+spec:
+  selector:
+    matchLabels:
+      app: webui
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: webui-transport
+spec:
+  selector:
+    matchLabels:
+      app: webui
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/aegisgate/sa/aegisgate-gateway-istio
+      to:
+        - operation:
+            ports:
+              - '8080'
+---
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: session-manager-strict
+spec:
+  selector:
+    matchLabels:
+      app: session-manager
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: session-manager-transport
+spec:
+  selector:
+    matchLabels:
+      app: session-manager
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/aegisgate/sa/session-manager-waypoint
+      to:
+        - operation:
+            ports:
+              - '8081'
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/authorino-namespace/sa/authorino-service-account
+      to:
+        - operation:
+            ports:
+              - '8082'
+---
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: backend-strict
+spec:
+  selector:
+    matchLabels:
+      app: backend
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: backend-transport
+spec:
+  selector:
+    matchLabels:
+      app: backend
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/aegisgate/sa/backend-waypoint
+      to:
+        - operation:
+            ports:
+              - '8080'
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: session-manager-access
+spec:
+  targetRefs:
+    - group: ''
+      kind: Service
+      name: session-manager
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/aegisgate/sa/aegisgate-gateway-istio
+      to:
+        - operation:
+            ports:
+              - '8081'
+            paths:
+              - /auth/*
+              - /api/*
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: backend-access
+spec:
+  targetRefs:
+    - group: ''
+      kind: Service
+      name: backend
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/aegisgate/sa/session-manager
+      to:
+        - operation:
+            ports:
+              - '8080'
+            methods:
+              - GET
+            paths:
+              - /api/projects
+              - /api/overview
+              - /api/admin
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/aegisgate/sa/session-manager
+      to:
+        - operation:
+            ports:
+              - '8080'
+            methods:
+              - POST
+            paths:
+              - /api/deployments
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: application-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: aegisgate
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 15008
+    - from:
+        - ipBlock:
+            cidr: 169.254.7.127/32
+        - ipBlock:
+            cidr: fd16:9254:7127:1337:ffff:ffff:ffff:ffff/128
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 8081

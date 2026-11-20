@@ -1,0 +1,273 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: webui
+automountServiceAccountToken: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webui
+  template:
+    metadata:
+      labels:
+        app: webui
+        app.kubernetes.io/part-of: aegisgate
+      annotations:
+        aegisgate.example.com/secret-revision: '1'
+    spec:
+      serviceAccountName: webui
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: webui
+          image: quay.io/arencloud/aegisgate-webui:demo@sha256:06f02d36eee9a39eca8377bbb9405a87d7de5fb1e265c899c40be4b186f8bb0c
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              cpu: '1'
+              memory: 128Mi
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 5
+            failureThreshold: 60
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 3
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: nginx
+              mountPath: /etc/nginx/conf.d
+              readOnly: true
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: nginx
+          configMap:
+            name: webui-nginx
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: session-manager
+automountServiceAccountToken: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: session-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: session-manager
+  template:
+    metadata:
+      labels:
+        app: session-manager
+        app.kubernetes.io/part-of: aegisgate
+      annotations:
+        aegisgate.example.com/secret-revision: '1'
+    spec:
+      serviceAccountName: session-manager
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: session-manager
+          image: quay.io/arencloud/aegisgate-session-manager:north-20261120@sha256:d6ba898f4b712556e3ea99712a950acc336408da8502a737b49496f79ffb09b9
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8081
+            - name: check
+              containerPort: 8082
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              cpu: '1'
+              memory: 256Mi
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 5
+            failureThreshold: 60
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 3
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: config
+              mountPath: /config
+              readOnly: true
+          env:
+            - name: BACKEND_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: backend-token
+                  key: BACKEND_TOKEN
+            - name: KEYCLOAK_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: session-manager-oidc
+                  key: KEYCLOAK_CLIENT_SECRET
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: session-manager-redis
+                  key: REDIS_URL
+            - name: PUBLIC_ORIGIN
+              value: https://demo.aegisgate.example.com
+            - name: BACKEND_URL
+              value: http://backend:8080
+            - name: CONFIG_PATH
+              value: /config/config.json
+            - name: SESSION_CHECK_ADDRESS
+              value: 0.0.0.0:8082
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: config
+          secret:
+            secretName: session-manager-oidc
+            items:
+              - key: config.json
+                path: config.json
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backend
+automountServiceAccountToken: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+        app.kubernetes.io/part-of: aegisgate
+      annotations:
+        aegisgate.example.com/secret-revision: '1'
+    spec:
+      serviceAccountName: backend
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: backend
+          image: quay.io/arencloud/aegisgate-backend:demo@sha256:7e4637c472dff4cf5682460378c7c99820526a1202fd48b7425b994818335e56
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: '1'
+              memory: 1Gi
+          startupProbe:
+            httpGet:
+              path: /q/health/ready
+              port: http
+            periodSeconds: 5
+            failureThreshold: 60
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /q/health/ready
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /q/health/live
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 3
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          env:
+            - name: BACKEND_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: backend-token
+                  key: BACKEND_TOKEN
+            - name: DEPLOYMENT_MODE
+              value: cluster
+      volumes:
+        - name: tmp
+          emptyDir: {}

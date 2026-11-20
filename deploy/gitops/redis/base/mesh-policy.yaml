@@ -1,0 +1,75 @@
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: redis-strict
+spec:
+  selector:
+    matchLabels:
+      redkey.inditex.dev/cluster: aegisgate-redis
+      redkey.inditex.dev/component: redis
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: redis-from-waypoint-and-robin
+spec:
+  selector:
+    matchLabels:
+      redkey.inditex.dev/cluster: aegisgate-redis
+      redkey.inditex.dev/component: redis
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/aegisgate-cache/sa/redis-waypoint
+              # Robin manages Redis directly by pod address.
+              - cluster.local/ns/aegisgate-cache/sa/aegisgate-redis-robin
+      to:
+        - operation:
+            ports: ["6379"]
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: redis-session-manager-at-waypoint
+spec:
+  targetRefs:
+    - group: ""
+      kind: Service
+      name: redis
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/aegisgate/sa/session-manager
+      to:
+        - operation:
+            ports: ["6379"]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: redis-ingress
+spec:
+  podSelector:
+    matchLabels:
+      redkey.inditex.dev/cluster: aegisgate-redis
+      redkey.inditex.dev/component: redis
+  policyTypes: [Ingress]
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 15008
+    # Redkey's TCP kubelet probes, rewritten by ambient's health-check handling.
+    - from:
+        - ipBlock:
+            cidr: 169.254.7.127/32
+        - ipBlock:
+            cidr: fd16:9254:7127:1337:ffff:ffff:ffff:ffff/128
+      ports:
+        - protocol: TCP
+          port: 6379

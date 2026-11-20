@@ -1,0 +1,19 @@
+{
+  "idle_seconds": 900,
+  "absolute_seconds": 3600,
+  "providers": [{
+    "id": "keycloak",
+    "name": "Keycloak",
+    "issuer": "http://localhost:8180/realms/aegisgate",
+    "client_id": "aegisgate",
+    "client_secret_env": "KEYCLOAK_CLIENT_SECRET",
+    "roles_pointer": "/realm_access/roles",
+    "role_mapping": { "aegis-viewer": "viewer", "aegis-operator": "operator", "aegis-admin": "admin" }
+  }],
+  "rules": [
+    { "method": "GET", "path": "/api/projects", "roles": ["viewer", "operator", "admin"] },
+    { "method": "GET", "path": "/api/overview", "roles": ["viewer", "operator", "admin"] },
+    { "method": "POST", "path": "/api/deployments", "roles": ["operator", "admin"] },
+    { "method": "GET", "path": "/api/admin", "roles": ["admin"] }
+  ]
+}

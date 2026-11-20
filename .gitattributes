@@ -1,0 +1,2 @@
+# Unified patches require context-prefix spaces, including before Go tabs.
+*.patch whitespace=-blank-at-eol,-space-before-tab

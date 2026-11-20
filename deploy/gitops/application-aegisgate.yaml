@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: aegisgate-application
+  namespace: argocd
+spec:
+  project: aegisgate
+  source:
+    repoURL: https://github.com/arencloud/aegisgate.git
+    targetRevision: main
+    path: deploy/gitops/application/overlays/example
+  destination:
+    server: https://api.cluster.example.com:6443
+    namespace: aegisgate
+  ignoreDifferences:
+    - group: ''
+      kind: ConfigMap
+      name: aegisgate-trusted-ca
+      namespace: aegisgate
+      jsonPointers:
+        - /data
+  syncPolicy:
+    syncOptions:
+      - PruneLast=true
+      - RespectIgnoreDifferences=true

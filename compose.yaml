@@ -1,0 +1,50 @@
+name: aegisgate
+services:
+  redis:
+    image: redis:8-alpine
+    command: [redis-server, --save, '', --appendonly, 'no']
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4.7
+    command: [start-dev, --import-realm, --http-port=8180]
+    environment:
+      KC_HOSTNAME: http://localhost:8180
+      KC_BOOTSTRAP_ADMIN_USERNAME: bootstrap-admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Run scripts/install-local.sh}
+      KC_HEALTH_ENABLED: 'true'
+    ports: ['127.0.0.1:8180:8180']
+    volumes:
+      - ./deploy/generated/realm.json:/opt/keycloak/data/import/realm.json:ro
+      - keycloak-data:/opt/keycloak/data
+  backend:
+    image: aegisgate-backend:dev
+    build: ./backend
+    environment:
+      BACKEND_TOKEN: ${BACKEND_TOKEN:?Run scripts/install-local.sh}
+      DEPLOYMENT_MODE: local
+  session-manager:
+    image: aegisgate-session-manager:dev
+    build: ./session-manager
+    environment:
+      PUBLIC_ORIGIN: http://localhost:8080
+      ALLOW_INSECURE_LOCALHOST: 'true'
+      OIDC_LOCAL_ADDRESS: keycloak:8180
+      REDIS_URL: redis://redis:6379
+      BACKEND_URL: http://backend:8080
+      BACKEND_TOKEN: ${BACKEND_TOKEN:?Run scripts/install-local.sh}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?Run scripts/install-local.sh}
+    depends_on:
+      redis: {condition: service_healthy}
+      keycloak: {condition: service_started}
+      backend: {condition: service_started}
+  webui:
+    image: aegisgate-webui:dev
+    build: ./webui
+    ports: ['127.0.0.1:8080:8080']
+    depends_on: [session-manager]
+volumes:
+  keycloak-data:
