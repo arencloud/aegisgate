@@ -11,6 +11,10 @@ cluster; it does not need to run alongside the application workloads.
 
 ## Configure your deployment
 
+**Start with [Before you deploy](PREREQUISITES.md).** It lists required platform
+services, operator watch scopes, all eight Vault records, mesh/network settings,
+and read-only checks to complete before creating the Argo applications.
+
 | Setting | Example value | Where to change it |
 | --- | --- | --- |
 | Git source | `https://github.com/arencloud/aegisgate.git` | AppProject and four Application manifests |

@@ -1,5 +1,9 @@
 # Keycloak first, through GitOps
 
+For the complete platform checklist, start with
+**[Before you deploy](PREREQUISITES.md)**, including mesh, RHCL, cert-manager,
+operator watch scopes, Vault records, PostgreSQL, and central Argo access.
+
 For the complete central Argo CD deployment, use the
 [Example bootstrap guide](DEPLOYMENT.md), including TLS policies and Gateway readiness.
 

@@ -171,7 +171,9 @@ The example deployment combines **RHCL 1.5**, **Service Mesh 3.5 ambient mode**,
 **Coraza WASM**, the **Keycloak Operator**, and **Redkey**, with secrets synchronized
 from Vault by ESO. Central Argo CD runs on a management cluster and reconciles four applications on your workload cluster.
 
-[**Start with the OpenShift GitOps guide →**](deploy/gitops/DEPLOYMENT.md)
+[**Before you deploy: platform prerequisites →**](deploy/gitops/PREREQUISITES.md)
+
+[**Continue with the OpenShift GitOps guide →**](deploy/gitops/DEPLOYMENT.md)
 
 [Identity setup](deploy/gitops/README.md) · [Redis setup](deploy/gitops/redis/README.md) · [Application policies](deploy/gitops/application/README.md)
 
