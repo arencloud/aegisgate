@@ -110,6 +110,16 @@ Keycloak instance; do not point another independent Keycloak installation at it.
 
 ## Platform prerequisites before syncing
 
+**ESO template compatibility:** current ESO v2 templates exclude Sprig's `fail`
+function. Using it causes `function "fail" not defined` at parse time, even when
+the record is valid and that branch would not execute. The templates therefore
+reject invalid records by invoking an intentionally undefined Go template whose
+name is a static `aegisgate validation:` diagnostic. Valid records never invoke
+it; invalid records stop reconciliation without including secret values in the
+error. Keep these guards in place. The local template tests exclude ESO's
+removed functions and verify both valid values and validation failures.
+See [ESO's supported template functions](https://external-secrets.io/main/guides/templating/).
+
 1. The installed Keycloak Operator must watch **`aegisgate-identity`**, and its
    service account must have access there. An installation in another namespace
    does not imply cluster-wide watches. Check its OLM OperatorGroup, CSV supported

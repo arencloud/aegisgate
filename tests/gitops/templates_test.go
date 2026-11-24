@@ -97,7 +97,13 @@ func templateFile(t *testing.T, path, name string) map[string]string {
 }
 
 func render(source string, data map[string]string) (string, error) {
-	tmpl, err := template.New("eso").Funcs(sprig.TxtFuncMap()).Option("missingkey=error").Parse(source)
+	// ESO's v2 engine excludes these Sprig functions. Using the unrestricted
+	// map here hid production template parse failures after an ESO update.
+	funcs := sprig.TxtFuncMap()
+	for _, name := range []string{"env", "expandenv", "getHostByName", "fail"} {
+		delete(funcs, name)
+	}
+	tmpl, err := template.New("eso").Funcs(funcs).Option("missingkey=error").Parse(source)
 	if err != nil {
 		return "", err
 	}
@@ -123,6 +129,30 @@ func TestDatabaseTLS(t *testing.T) {
 	data["host"] = "db.test/?sslmode=disable"
 	if _, err := render(tmpl, data); err == nil {
 		t.Fatal("accepted URL injection")
+	}
+}
+
+func TestValidationErrorsDoNotExposeValues(t *testing.T) {
+	// Validation must stop reconciliation, but its diagnostic must contain only
+	// a static label, never the input value or another credential in the record.
+	sensitive := "synthetic-private-value-not-for-error-output"
+	cases := []struct {
+		source string
+		data   map[string]string
+	}{
+		{templates(t, "keycloak-bootstrap")["username"], map[string]string{"realm": sensitive, "username": sensitive, "password": sensitive}},
+		{templates(t, "keycloak-db")["jdbc-url"], map[string]string{"sslmode": sensitive, "password": sensitive}},
+		{templateFile(t, "../../deploy/gitops/redis/base/external-secret.yaml", "redis-auth")["password"], map[string]string{"username": sensitive, "password": sensitive}},
+		{templateFile(t, "../../deploy/gitops/application/base/external-secrets.yaml", "session-manager-oidc")["config.json"], map[string]string{"realm": sensitive, "client_secret": sensitive}},
+	}
+	for _, tc := range cases {
+		_, err := render(tc.source, tc.data)
+		if err == nil {
+			t.Fatal("invalid configuration was accepted")
+		}
+		if !strings.Contains(err.Error(), "aegisgate validation:") || strings.Contains(err.Error(), sensitive) {
+			t.Fatal("validation diagnostic must have a static label and no input values")
+		}
 	}
 }
 
